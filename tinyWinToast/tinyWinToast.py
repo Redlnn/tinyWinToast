@@ -179,10 +179,7 @@ class Toast:
 
 		:config: toast config
 		"""
-		if config is None:
-			self.config = Config()
-		else:
-			self.config = config
+		self.config = Config() if config is None else config
 
 	def setConfig(self, config):
 		"""Set toast config
@@ -263,9 +260,7 @@ class Toast:
 		"""
 		if len(self.config.TEXTS) == 0:
 			self.config.TEXTS.append(("", 1, ""))
-			self.config.TEXTS.append((msg, maxLines, placement, style, wrap))
-		else:
-			self.config.TEXTS.append((msg, maxLines, placement, style, wrap))
+		self.config.TEXTS.append((msg, maxLines, placement, style, wrap))
 
 	def addGroupText(self, msg, maxLines=1, placement="", style=TEXT_STYLE_BASE, wrap=False, align=TEXT_ALIGN_LEFT):
 		"""Add text in footer
@@ -280,15 +275,11 @@ class Toast:
 		if align == "left":
 			if len(self.config.TEXTS_GROUP_LEFT) == 0:
 				self.config.TEXTS_GROUP_LEFT.append(("", 1, "", "captionSubtle", False))
-				self.config.TEXTS_GROUP_LEFT.append((msg, maxLines, placement, style, wrap))
-			else:
-				self.config.TEXTS_GROUP_LEFT.append((msg, maxLines, placement, style, wrap))
+			self.config.TEXTS_GROUP_LEFT.append((msg, maxLines, placement, style, wrap))
 		else:
 			if len(self.config.TEXTS_GROUP_RIGHT) == 0:
 				self.config.TEXTS_GROUP_RIGHT.append(("", 1, "", "captionSubtle", False))
-				self.config.TEXTS_GROUP_RIGHT.append((msg, maxLines, placement, style, wrap))
-			else:
-				self.config.TEXTS_GROUP_RIGHT.append((msg, maxLines, placement, style, wrap))
+			self.config.TEXTS_GROUP_RIGHT.append((msg, maxLines, placement, style, wrap))
 
 	def setIcon(self, src, crop=CROP_NONE):
 		"""Set toast logo
@@ -369,7 +360,7 @@ class Toast:
 $APP_ID = '{0}'""".format(self.config.APP_ID)
 		if self.config.TAG != "":
 			head += "\n$tag = '{0}'\n".format(self.config.TAG)
-		
+
 		if self.config.GROUP != "":
 			head += "\n$group = '{0}'\n".format(self.config.GROUP)
 		head += '\n$template = @"\n'
@@ -391,7 +382,7 @@ $APP_ID = '{0}'""".format(self.config.APP_ID)
 			self.config.TIME = re.sub(r"\.\d+", ".00Z", self.config.TIME)
 			toast.setAttribute("displayTimestamp", self.config.TIME)
 
-		if not self.config.HEADER is None:
+		if self.config.HEADER is not None:
 			header = doc.createElement('header')
 			header.setAttribute("id", self.config.HEADER.id)
 			header.setAttribute("title", self.config.HEADER.title)
@@ -417,7 +408,7 @@ $APP_ID = '{0}'""".format(self.config.APP_ID)
 			if txt[4]:
 				text.setAttribute("hint-wrap", "true")
 			binding.appendChild(text)
-		
+
 		if self.config.ICO_IMAGE != ():
 			image = doc.createElement('image')
 			image.setAttribute("placement", self.config.ICO_IMAGE[0])
@@ -491,7 +482,7 @@ $APP_ID = '{0}'""".format(self.config.APP_ID)
 
 				b = a[1]
 
-				if a[0] == ACTION_BUTTON:
+				if t == ACTION_BUTTON:
 					action = doc.createElement("action")
 					action.setAttribute("content", b.content)
 					action.setAttribute("arguments", b.arguments)
@@ -513,7 +504,7 @@ $APP_ID = '{0}'""".format(self.config.APP_ID)
 						input.setAttribute("placeHolderContent", b.placeHolderContent)
 					if b.defaultInput != "" and b.intype == "selection":
 						input.setAttribute("defaultInput", b.defaultInput)
-					
+
 					if b.intype == 'selection':
 						for s in b.selections:
 							selection = doc.createElement("selection")
@@ -521,9 +512,9 @@ $APP_ID = '{0}'""".format(self.config.APP_ID)
 							selection.setAttribute("content", s[1])
 							input.appendChild(selection)
 					actions.appendChild(input)
-			
 
-		if not self.config.AUDIO is None:
+
+		if self.config.AUDIO is not None:
 			audio = doc.createElement('audio')
 			if self.config.AUDIO.isSilent:
 				audio.setAttribute("silent", "true")
@@ -544,21 +535,20 @@ $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 			tail += "$toast.Group = $group\n"
 		tail += '''
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($APP_ID)'''
-	
+
 		tail += '.Show($toast)'
 
-		toaststr = head + '\n' + doc.toprettyxml(indent="	").split("\n",1)[1] + '\n' + tail
-		return toaststr
+		return head + '\n' + doc.toprettyxml(indent="	").split("\n",1)[1] + '\n' + tail
 
 	def show(self):
 		"""Show toast"""
 		toaststr = self.__genXML()
 		path = os.path.dirname(os.path.realpath(__file__)) + "\\"
-		text_file = open(path + "toast.ps1", "w")
-		text_file.write(toaststr)
-		text_file.close()
-		subprocess.run(["PowerShell", "-ExecutionPolicy", "Bypass", "-File", path + "toast.ps1"])
-		os.remove(path + "toast.ps1")
+		with open(f"{path}toast.ps1", "w") as text_file:
+			text_file.write(toaststr)
+		subprocess.run(
+		    ["PowerShell", "-ExecutionPolicy", "Bypass", "-File", f"{path}toast.ps1"])
+		os.remove(f"{path}toast.ps1")
 
 	def update(self, sequenceId, data):
 		"""Update toast"""
@@ -566,8 +556,8 @@ $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 [Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
-$APP_ID = '{0}'""".format(self.config.APP_ID)
-		toaststr+= """
+$APP_ID = '{0}'""".format(
+		    self.config.APP_ID) + """
 $sequenceId = {0}
 		""".format(sequenceId)
 		toaststr+= """
@@ -595,11 +585,11 @@ $ToastData = [Windows.UI.Notifications.NotificationData]::new($DataDictionary)
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($APP_ID)'''
 		toaststr += ".Update($ToastData, $tag, $group)"
 		path = os.path.dirname(os.path.realpath(__file__)) + "\\"
-		text_file = open(path + "toast.ps1", "w")
-		text_file.write(toaststr)
-		text_file.close()
-		subprocess.run(["PowerShell", "-ExecutionPolicy", "Bypass", "-File", path + "toast.ps1"])
-		os.remove(path + "toast.ps1")
+		with open(f"{path}toast.ps1", "w") as text_file:
+			text_file.write(toaststr)
+		subprocess.run(
+		    ["PowerShell", "-ExecutionPolicy", "Bypass", "-File", f"{path}toast.ps1"])
+		os.remove(f"{path}toast.ps1")
 
 	def showFromXml(self, appId, xml):
 		"""Show toast from xml
@@ -620,12 +610,11 @@ $xml.LoadXml($template)
 $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($APP_ID).Show($toast)""".format(appId, xml)
 		path = os.path.dirname(os.path.realpath(__file__)) + "\\"
-		text_file = open("toast.ps1", "w")
-		text_file.write(toaststr)
-		text_file.close()
-
-		subprocess.run(["PowerShell", "-ExecutionPolicy", "Bypass", "-File", path + "toast.ps1"])
-		os.remove(path + "toast.ps1")
+		with open("toast.ps1", "w") as text_file:
+			text_file.write(toaststr)
+		subprocess.run(
+		    ["PowerShell", "-ExecutionPolicy", "Bypass", "-File", f"{path}toast.ps1"])
+		os.remove(f"{path}toast.ps1")
 
 	def startFromScript(self, scriptPath):
 		"""Start toast from script
